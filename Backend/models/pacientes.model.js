@@ -1,40 +1,59 @@
-const pool = require('../config/db');
+// models/pacientes.js
+const { localDB } = require('../config/db');
+const { appendPending } = require('../services/queryService');
 
-// Obtener todos los pacientes
+// Obtener todos los pacientes (desde BD local)
 async function getPacientes() {
-  const [rows] = await pool.query('SELECT * FROM pacientes');
+  const [rows] = await localDB.query('SELECT * FROM pacientes');
   return rows;
 }
 
-// Obtener un paciente por ID
+// Obtener un paciente por ID (desde BD local)
 async function getPacienteById(id) {
-  const [rows] = await pool.query('SELECT * FROM pacientes WHERE idPaciente = ?', [id]);
+  const [rows] = await localDB.query('SELECT * FROM pacientes WHERE idPaciente = ?', [id]);
   return rows[0] || null;
 }
 
 // Crear paciente
 async function crearPaciente(data) {
+  if (!data) {
+    throw new Error('No se recibieron datos para crear paciente');
+  }
   const { nombre, apellido, fechaNacimiento } = data;
-  const [result] = await pool.query(
-    'INSERT INTO pacientes (nombre, apellido, fechaNacimiento) VALUES (?, ?, ?)',
-    [nombre, apellido, fechaNacimiento]
-  );
+  console.log(nombre, apellido);
+
+  const sql = 'INSERT INTO pacientes (nombre, apellido, fechaNacimiento) VALUES (?, ?, ?)';
+  const params = [nombre, apellido, fechaNacimiento];
+
+  const [result] = await localDB.query(sql, params);
+
+  appendPending(sql, params);
+
   return { id: result.insertId, ...data };
 }
 
 // Actualizar paciente
 async function actualizarPaciente(id, data) {
   const { nombre, apellido, fechaNacimiento } = data;
-  await pool.query(
-    'UPDATE pacientes SET nombre=?, apellido=?, fechaNacimiento=? WHERE idPaciente=?',
-    [nombre, apellido, fechaNacimiento, id]
-  );
+  const sql = 'UPDATE pacientes SET nombre=?, apellido=?, fechaNacimiento=? WHERE idPaciente=?';
+  const params = [nombre, apellido, fechaNacimiento, id];
+
+  await localDB.query(sql, params);
+
+  appendPending(sql, params);
+
   return getPacienteById(id);
 }
 
 // Eliminar paciente
 async function eliminarPaciente(id) {
-  await pool.query('DELETE FROM pacientes WHERE idPaciente=?', [id]);
+  const sql = 'DELETE FROM pacientes WHERE idPaciente=?';
+  const params = [id];
+
+  await localDB.query(sql, params);
+
+  appendPending(sql, params);
+
   return true;
 }
 
