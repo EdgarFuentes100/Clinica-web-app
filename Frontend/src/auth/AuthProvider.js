@@ -1,19 +1,26 @@
 import React, { createContext, useState, useEffect, useCallback, useContext } from "react";
+import { useNavigate } from "react-router-dom";
 import { useFetch } from "../api/useFetch";
 
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
     const { getFetch, postFetch } = useFetch();
+    const navigate = useNavigate();
+
     const [user, setUser] = useState(null);
     const [checking, setChecking] = useState(true);
+    const [logoutLoading, setLogoutLoading] = useState(false);
 
-    // Verifica sesión en el inicio
+    // Verificar sesión al arrancar
     const checkAuth = useCallback(async () => {
         setChecking(true);
         const resp = await getFetch("auth/check");
-        if (resp.ok && resp.datos) setUser(resp.datos);
-        else setUser(null);
+        if (resp.ok && resp.datos) {
+            setUser(resp.datos); // decoded token o usuario completo
+        } else {
+            setUser(null);
+        }
         setChecking(false);
     }, [getFetch]);
 
@@ -21,28 +28,31 @@ export const AuthProvider = ({ children }) => {
         checkAuth();
     }, [checkAuth]);
 
-    // Login
-    const login = async (pin) => {
-        const resp = await postFetch("auth/login", { pin });
-        if (resp.ok && resp.datos) {
-            setUser(resp.datos);
-            return { success: true };
-        }
-        setUser(null);
-        return { success: false, message: resp.mensaje || "PIN incorrecto" };
-    };
-
     // Logout
-    const logout = async () => {
-        await postFetch("auth/logout", {});
+    const logout = useCallback(async () => {
+        if (logoutLoading) return;
+        setLogoutLoading(true);
+        await postFetch("auth/logout", {}); // backend clearCookie
         setUser(null);
+        setLogoutLoading(false);
+        navigate("/login", { replace: true });
+    }, [postFetch, logoutLoading, navigate]);
+
+    const value = {
+        user,
+        setUser,
+        logout,
+        logoutLoading,
+        checking,
+        checkAuth,
     };
 
-    return (
-        <AuthContext.Provider value={{ user, login, logout, checkAuth, checking }}>
-            {children}
-        </AuthContext.Provider>
-    );
+    if (checking) {
+        return <div>Cargando...</div>;
+    }
+
+    return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
+// Hook de conveniencia
 export const useAuthContext = () => useContext(AuthContext);

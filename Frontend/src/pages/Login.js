@@ -1,17 +1,34 @@
-import React from "react";
-import { useAuth } from "../auth/useAuth";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuthContext } from "../auth/AuthProvider";
+import { useFetch } from "../api/useFetch";
 
-export const Login = () => {
-  const { pin, setPin, isLoading, errorMsg, handleLogin } = useAuth();
+function Login() {
+  const { setUser } = useAuthContext();
+  const { postFetch } = useFetch();
   const navigate = useNavigate();
+
+  const [pin, setPin] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState(null);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const result = await handleLogin();
-    if (result.success) {
-      navigate("/dashboard");
+    if (pin.length !== 4) return;
+
+    setIsLoading(true);
+    setErrorMsg(null);
+
+    const resp = await postFetch("auth/login", { pin });
+
+    if (resp.ok && resp.datos) {
+      setUser(resp.datos);
+      navigate("/dashboard", { replace: true });
+    } else {
+      setErrorMsg(resp.mensaje || "PIN incorrecto");
     }
+
+    setIsLoading(false);
   };
 
   return (
@@ -57,9 +74,7 @@ export const Login = () => {
                       <div className="input-group">
                         <input
                           type="password"
-                          className={`form-control py-3 ${
-                            errorMsg ? "is-invalid" : ""
-                          }`}
+                          className={`form-control py-3 ${errorMsg ? "is-invalid" : ""}`}
                           placeholder="Ingrese su PIN de 4 dígitos"
                           value={pin}
                           onChange={(e) =>
@@ -75,9 +90,7 @@ export const Login = () => {
                           <i className="bi bi-lock-fill text-muted"></i>
                         </span>
                         {errorMsg && (
-                          <div className="invalid-feedback d-block">
-                            {errorMsg}
-                          </div>
+                          <div className="invalid-feedback d-block">{errorMsg}</div>
                         )}
                       </div>
                     </div>
@@ -104,13 +117,13 @@ export const Login = () => {
                   </form>
 
                   <div className="mt-auto pt-4 d-flex justify-content-between align-items-center border-top border-light">
-                    <a
-                      href="#"
-                      className="text-decoration-none small text-muted d-flex align-items-center"
+                    <button
+                      type="button"
+                      className="btn btn-link text-decoration-none small text-muted d-flex align-items-center p-0"
                     >
                       <i className="bi bi-question-circle me-2"></i>
                       Soporte técnico
-                    </a>
+                    </button>
                     <span className="badge bg-light text-dark small fw-normal">
                       v4.2 • SecureMed Pro
                     </span>
@@ -121,14 +134,16 @@ export const Login = () => {
                 <div className="col-md-6 d-none d-md-block position-relative bg-primary">
                   <div className="position-absolute w-100 h-100 bg-primary bg-opacity-10"></div>
                   <img
-                    src="https://images.unsplash.com/photo-1581595219315-a187dd40c322?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80"
+                    src="https://images.unsplash.com/photo-1581595219315-a187dd40c322?auto=format&fit=crop&w=800&q=80"
                     className="w-100 h-100"
                     style={{ objectFit: "cover", filter: "brightness(0.9)" }}
                     alt="Equipo médico"
                   />
                   <div
                     className="position-absolute bottom-0 start-0 end-0 p-4 px-5 text-white"
-                    style={{ background: "linear-gradient(transparent, rgba(0, 0, 0, 0.7))" }}
+                    style={{
+                      background: "linear-gradient(transparent, rgba(0, 0, 0, 0.7))",
+                    }}
                   >
                     <h2 className="fs-5 fw-semibold mb-1">
                       <i className="bi bi-shield-check me-2"></i>
@@ -143,7 +158,9 @@ export const Login = () => {
             </div>
           </div>
         </div>
-      </div>
+      </div> 
     </div>
   );
-};
+}
+
+export {Login};

@@ -1,6 +1,6 @@
 // models/pacientes.js
 const { localDB } = require('../config/db');
-const { appendPending } = require('../services/queryService');
+const { appendPending } = require('../services/query.service');
 
 // Obtener todos los pacientes (desde BD local)
 async function getPacientes() {
