@@ -4,6 +4,8 @@ const cookieParser = require('cookie-parser');
 
 const authRoutes = require('./routes/auth.routes');
 const usuariosRoutes = require('./routes/usuarios.routes');
+const dientesRoutes = require('./routes/dientes.routes');
+const tratamientoRoutes = require('./routes/tratamiento.routes');
 
 const app = express();
 
@@ -16,5 +18,7 @@ app.use(cors({
 }));
 
 app.use('/api/v1/auth', authRoutes);
+app.use('/api/v1/diente', dientesRoutes);
+app.use('/api/v1/tratamiento', tratamientoRoutes);
 
 app.listen(4000, () => console.log('Servidor en puerto 4000'));
